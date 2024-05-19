@@ -3,3 +3,8 @@ requests
 pandas
 matplotlib
 plotly
+
+python-dotenv
+requests-cache
+kaleido
+shinywidgets
