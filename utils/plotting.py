@@ -1,5 +1,6 @@
-import plotly.graph_objects as go
 import textwrap
+
+import plotly.graph_objects as go
 
 
 def plot_repo_stats(data):
@@ -21,7 +22,6 @@ def plot_user_stats(data):
 
 
 def plot_user_repos(repos):
-    # Sort repos by stars
     repos_sorted = sorted(repos, key=lambda x: x['stargazers_count'], reverse=True)
     repo_names = [textwrap.shorten(repo['name'], width=30, placeholder="...") for repo in repos_sorted]
     stars = [repo['stargazers_count'] for repo in repos_sorted]
