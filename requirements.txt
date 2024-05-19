@@ -2,3 +2,4 @@ shiny
 requests
 pandas
 matplotlib
+plotly
