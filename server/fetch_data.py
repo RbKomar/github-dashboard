@@ -1,5 +1,11 @@
 import requests
-HEADERS = {"Authorization": f"token YOUR_PERSONAL_ACCESS_TOKEN"}
+
+USE_HEADERS = False
+if USE_HEADERS:
+    HEADERS = {"Authorization": f"token YOUR_PERSONAL_ACCESS_TOKEN"}
+else:
+    HEADERS = {}
+
 
 def fetch_repo_data(user, repo):
     url = f'https://api.github.com/repos/{user}/{repo}'
@@ -23,10 +29,12 @@ def fetch_repo_data(user, repo):
 
     return repo_data
 
+
 def fetch_user_data(user):
     url = f'https://api.github.com/users/{user}'
     response = requests.get(url, headers=HEADERS)
     return response.json()
+
 
 def fetch_user_repos(user):
     url = f'https://api.github.com/users/{user}/repos'

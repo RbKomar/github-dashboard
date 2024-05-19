@@ -1,11 +1,14 @@
+import logging
+
 from shiny import render, reactive, ui
+
 from server.fetch_data import fetch_repo_data, fetch_user_data, fetch_user_repos
 from ui.components import create_info_panel, create_clickable_list
-from utils.plotting import plot_repo_stats, plot_user_stats, plot_user_repos
-import logging
+from utils.plotting import plot_user_stats, plot_user_repos
 
 # Initialize logging
 logging.basicConfig(level=logging.DEBUG)
+
 
 def server(input, output, session):
     user = reactive.Value("")
@@ -43,10 +46,10 @@ def server(input, output, session):
                 if user_name not in accounts.get():
                     accounts.set(accounts.get() + [user_name])
                 repos = repositories.get().get(user_name, [])
-                if not any(repo['name'] == repo_name for repo in repos):
+                if all(repo['name'] != repo_name for repo in repos):
                     repo_data = fetch_repo_data(user_name, repo_name)
                     repos.append(repo_data)
-                    repositories.get()[user_name] = repos  # Ensure repositories are stored correctly
+                    repositories.get()[user_name] = repos
 
     @reactive.Effect
     @reactive.event(input.account_list_click)
@@ -54,7 +57,7 @@ def server(input, output, session):
         clicked_account = input.account_list_click()
         logging.debug(f"Account clicked: {clicked_account}")
         user.set(clicked_account)
-        repo.set("")  # Clear the selected repo when account is clicked
+        repo.set("")
 
     @reactive.Effect
     @reactive.event(input.repo_list_click)
@@ -68,7 +71,8 @@ def server(input, output, session):
     @output
     @render.ui
     def dynamic_tabs():
-        tabs = [ui.nav_panel(account, ui.h3(f"Repositories for {account}"), ui.output_ui(f"repo_list_{i}")) for i, account in enumerate(accounts.get())]
+        tabs = [ui.nav_panel(account, ui.h3(f"Repositories for {account}"), ui.output_ui(f"repo_list_{i}")) for
+                i, account in enumerate(accounts.get())]
         return ui.navset_tab(*tabs, id="accounts_nav")
 
     @output
@@ -84,10 +88,8 @@ def server(input, output, session):
             if isinstance(repos, list):
                 # Ensure repos is a list of dictionaries with 'updated_at' keys
                 sorted_repos = sorted(repos, key=lambda x: x.get('updated_at', ''), reverse=True)
-                return create_clickable_list(
-                    [f"{user.get()}/{repo['name']}" for repo in sorted_repos],
-                    "repo_list_click"
-                )
+                return create_clickable_list([f"{user.get()}/{repo['name']}" for repo in sorted_repos],
+                                             "repo_list_click")
         return ui.div()
 
     for i in range(5):
@@ -99,27 +101,21 @@ def server(input, output, session):
                 if account in repositories.get():
                     repos = repositories.get()[account]
                     if isinstance(repos, list):
-                        # Ensure repos is a list of dictionaries with 'updated_at' keys
                         sorted_repos = sorted(repos, key=lambda x: x.get('updated_at', ''), reverse=True)
-                        return create_clickable_list(
-                            [f"{account}/{repo['name']}" for repo in sorted_repos],
-                            "repo_list_click"
-                        )
+                        return create_clickable_list([f"{account}/{repo['name']}" for repo in sorted_repos],
+                                                     "repo_list_click")
             return ui.div()
 
     @output
     @render.ui
     def user_info():
         data = fetch_user_data(user.get())
-        return create_info_panel(
-            f"User: {user.get()}",
-            f"""
+        return create_info_panel(f"User: {user.get()}", f"""
             **Name:** {data.get('name', 'No name provided')}
             **Public Repos:** {data.get('public_repos', 0)}
             **Followers:** {data.get('followers', 0)}
             **Following:** {data.get('following', 0)}
-            """
-        )
+            """)
 
     @output
     @render.ui
@@ -127,17 +123,15 @@ def server(input, output, session):
         data = fetch_repo_data(user.get(), repo.get())
         recent_pushes = data.get('recent_pushes', [])
         if isinstance(recent_pushes, list):
-            recent_pushes = "\n".join(
-                [f"- {push['commit']['message']} (by {push['commit']['author']['name']} on {push['commit']['author']['date']})" for push in recent_pushes]
-            )
+            recent_pushes = "\n".join([
+                f"- {push['commit']['message']} (by {push['commit']['author']['name']} on {push['commit']['author']['date']})"
+                for push in recent_pushes])
         waiting_merges = data.get('waiting_merges', [])
         if isinstance(waiting_merges, list):
             waiting_merges = "\n".join(
-                [f"- {pull['title']} (created by {pull['user']['login']} on {pull['created_at']})" for pull in waiting_merges]
-            )
-        return create_info_panel(
-            f"Repository: {repo.get()}",
-            f"""
+                [f"- {pull['title']} (created by {pull['user']['login']} on {pull['created_at']})" for pull in
+                 waiting_merges])
+        return create_info_panel(f"Repository: {repo.get()}", f"""
             **Description:** {data.get('description', 'No description')}
             **Stars:** {data.get('stargazers_count', 0)}
             **Forks:** {data.get('forks_count', 0)}
@@ -146,8 +140,7 @@ def server(input, output, session):
             {recent_pushes}
             **Waiting Merges:**
             {waiting_merges}
-            """
-        )
+            """)
 
     @output
     @render.plot
